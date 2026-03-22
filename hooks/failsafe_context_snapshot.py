@@ -41,6 +41,13 @@ def check_significance(data):
     session_id = data.get('sessionId') or data.get('session_id')
     history = data.get('messages', []) or data.get('session_history', [])
     
+    if not history and 'transcript_path' in data:
+        try:
+            with open(data['transcript_path'], 'r') as tf_in:
+                full_transcript = json.load(tf_in)
+                history = full_transcript.get('messages', [])
+        except: pass
+
     if not session_id or not history:
         return False
         
@@ -85,29 +92,9 @@ def trigger_checkpoint(data_string):
         except Exception: return False
     return False
 
-def get_latest_transcript():
-    try:
-        raw_dir = os.path.join(AIM_ROOT, "archive/raw")
-        files = glob.glob(os.path.join(raw_dir, "*.json"))
-        if not files: return None
-        latest = max(files, key=os.path.getmtime)
-        with open(latest, 'r') as f:
-            return f.read()
-    except: return None
-
 def main():
     try:
-        # PHASE 17: Mirror global transcripts to local archive
-        # We do this FIRST so if we need to fall back to reading from disk, the file is fresh.
-        porter_path = os.path.join(AIM_ROOT, "scripts/session_porter.py")
-        if os.path.exists(porter_path):
-            subprocess.run([venv_python, porter_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            
-        data_to_process = input_data
-        if not data_to_process:
-            data_to_process = get_latest_transcript()
-            
-        if not data_to_process:
+        if not input_data:
             print(json.dumps({}))
             return
         
@@ -118,55 +105,56 @@ def main():
             os.makedirs(os.path.dirname(backup_path), exist_ok=True)
             with open(backup_path, 'w') as bf:
                 bf.write(data_to_process)
-                
+
             # Phase 20: The Failsafe Context Tail
             data = json.loads(data_to_process)
             history = data.get('messages', []) or data.get('session_history', [])
+
+            # Gemini's AfterTool hook doesn't send the full history, just the tool event.
+            # But it DOES send the transcript_path. So we read it from disk.
+            if not history and 'transcript_path' in data:
+                try:
+                    with open(data['transcript_path'], 'r') as tf_in:
+                        full_transcript = json.load(tf_in)
+                        history = full_transcript.get('messages', [])
+                except: pass
+
             if history:
                 tail_content = "# A.I.M. FALLBACK CONTEXT TAIL\n\n*Note: This is an automatic, zero-token snapshot of the last few turns.* \n\n"
                 # Get last 10 turns
                 recent_turns = history[-10:]
                 for msg in recent_turns:
-                    role = msg.get('role', msg.get('type', 'unknown')).upper()
+                    role = msg.get('type', 'unknown').upper()
                     tail_content += f"### {role}\n"
                     
-                    if role in ['USER', 'SYSTEM']:
+                    if role == 'USER':
                         content_list = msg.get('content', [])
-                        if isinstance(content_list, list):
-                            text = " ".join([c.get('text', '') for c in content_list if isinstance(c, dict) and 'text' in c])
-                        else:
-                            text = str(content_list)
+                        text = " ".join([c.get('text', '') for c in content_list if 'text' in c])
                         tail_content += f"{text[:500]}...\n\n" if len(text) > 500 else f"{text}\n\n"
-                    elif role in ['GEMINI', 'MODEL', 'ASSISTANT']:
+                    elif role == 'GEMINI':
                         content = msg.get('content', '')
                         if content:
-                            if isinstance(content, list):
-                                text = " ".join([c.get('text', '') for c in content if isinstance(c, dict) and 'text' in c])
-                            else:
-                                text = str(content)
-                            tail_content += f"{text[:500]}...\n\n" if len(text) > 500 else f"{text}\n\n"
-                            
-                        tool_calls = msg.get('toolCalls') or msg.get('tool_calls') or []
+                            tail_content += f"{content[:500]}...\n\n" if len(content) > 500 else f"{content}\n\n"
+                        tool_calls = msg.get('toolCalls', [])
                         for call in tool_calls:
-                            if 'function' in call:
-                                tool_name = call['function'].get('name', 'tool')
-                                args = call['function'].get('arguments', {})
-                            else:
-                                tool_name = call.get('name', 'tool')
-                                args = call.get('args', {})
-                            
-                            args_str = args if isinstance(args, str) else json.dumps(args)
-                            tail_content += f"**Tool Call:** `{tool_name}`\n```json\n{args_str[:200]}\n```\n\n"
+                            tool_name = call.get('name', 'tool')
+                            args = json.dumps(call.get('args', {}))
+                            tail_content += f"**Tool Call:** `{tool_name}`\n```json\n{args[:200]}\n```\n\n"
                             
                 with open(tail_path, 'w') as tf:
                     tf.write(tail_content)
+            
+            # PHASE 17: Mirror global transcripts to local archive
+            porter_path = os.path.join(AIM_ROOT, "scripts/session_porter.py")
+            if os.path.exists(porter_path):
+                subprocess.run([venv_python, porter_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except: pass
 
         # 2. SIGNIFICANCE FILTER (Phase 21)
         try:
-            data = json.loads(data_to_process)
+            data = json.loads(input_data)
             if check_significance(data):
-                trigger_checkpoint(data_to_process)
+                trigger_checkpoint(input_data)
         except:
             pass
 

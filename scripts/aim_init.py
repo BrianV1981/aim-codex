@@ -106,7 +106,7 @@ T_CONFIG = """{{
 }}
 """
 
-def register_hooks(cli_type="gemini"):
+def register_hooks(cli_type="codex"):
     if cli_type == "gemini":
         settings_path = os.path.expanduser("~/.gemini/settings.json")
         hook_events = {
@@ -196,7 +196,7 @@ def init_workspace():
 
     name, stack, style, obsidian_path = "Operator", "General", "Direct", ""
     physical, rules, goals, business, grok_profile = "N/A", "N/A", "N/A", "None provided.", "None."
-    cli_type = "gemini"
+    cli_type = "codex"
 
     if mode != "UPDATE":
         print("\n[PART 0: THE ENGINE]")

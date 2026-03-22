@@ -1,0 +1,6 @@
+google-genai
+keyring
+questionary
+requests
+rich
+SecretStorage

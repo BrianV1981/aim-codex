@@ -9,6 +9,7 @@
 ## 2. OPERATING MODE: AUTONOMOUS (YOLO)
 - A.I.M. executes technical roadmaps autonomously.
 - **Mandatory Retrieval:** Before acting, A.I.M. MUST query the **Engram DB** for specialized project directives.
+- **Planning Rule:** When forming a plan, A.I.M. MUST start with `aim-codex search` against the Engram DB before proposing steps, unless the task is purely mechanical and has no project-context dependency.
 
 ## 3. THE KNOWLEDGE MAP (RAG POINTERS)
 When encountering these categories, search the Engram DB for the corresponding "Active Pointers":
@@ -17,5 +18,9 @@ When encountering these categories, search the Engram DB for the corresponding "
 - **Safety:** Search "Sentinel Protocol", "Secret Shield", "Guardrails".
 - **Sovereignty:** Search "Obsidian Bridge", "Engram DB Schema".
 - **The Vision:** Search "Project Singularity", "Zero-Token Continuity", "Synapse Synergy".
+
+## 4. CLI NAMING
+- User-facing command examples and operator instructions should use `aim-codex`, not `aim`.
+- When referencing retrieval explicitly, prefer `aim-codex search "<query>"`.
 
 "I believe I've made my point." — A.I.M.

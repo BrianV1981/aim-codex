@@ -38,6 +38,8 @@ NEW_ALIAS="alias aim-codex='$AIM_ROOT/scripts/aim_cli.py'"
 update_shell() {
     local conf=$1
     if [ -f "$conf" ]; then
+        # Remove stale short aliases from older repo generations
+        sed -i '/alias aim=/d' "$conf"
         # Force-remove ANY line containing 'alias aim-codex=' to clear old paths
         sed -i '/alias aim-codex=/d' "$conf"
         # Append the fresh, correct one

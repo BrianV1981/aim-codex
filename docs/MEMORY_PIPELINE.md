@@ -1,37 +1,27 @@
-# A.I.M. Memory Pipeline Architecture
+# Memory Pipeline
 
-This document defines how information flows from a live chat into A.I.M.'s permanent architectural memory.
+This document describes the current memory flow in `aim-codex`.
 
-## 1. The Three-Tiered Storage Model
-A.I.M. separates data based on its "Half-Life" and "Token Cost":
+## Storage Layers
+1. Raw transcripts and mirrored archive material
+2. Searchable fragment storage in `archive/engram.db`
+3. Continuity artifacts in `continuity/`
+4. Durable memory in `core/MEMORY.md`
 
-1.  **Forensic Tier (The Brain)**: Raw, scrubbed session JSONs. Indexed locally into `forensic.db` (SQLite).
-    - **Purpose**: Near-instant semantic search and "trace-back" for specific technical details.
-    - **Cost**: $0 (Local).
-2.  **Narrative Tier (The Story)**: Daily logs (`memory/YYYY-MM-DD.md`).
-    - **Purpose**: Human-readable history and project momentum.
-    - **Cost**: Low (Local append).
-3.  **Durable Tier (The Soul)**: Core rules and infrastructure (`core/MEMORY.md`).
-    - **Purpose**: Foundational logic injected into every session start.
-    - **Cost**: High (Permanent token tax).
+## Main Components
+- `scripts/session_porter.py`
+- `scripts/extract_signal.py`
+- `hooks/tier1_hourly_summarizer.py`
+- `src/handoff_pulse_generator.py`
+- `src/tier2_daily_summarizer.py`
+- `src/tier3_weekly_summarizer.py`
+- `src/tier4_memory_proposer.py`
 
-## 2. The Flywheel Sequence
-When a session ends or a checkpoint is reached, A.I.M. executes this exact sequence:
+## Flow
+1. Session material is mirrored into `archive/raw/`.
+2. `extract_signal.py` and related indexers create searchable fragments.
+3. Summarizers condense recent activity into continuity and memory artifacts.
+4. Retrieval reads from `archive/engram.db` when context is needed.
 
-1.  **SCRUB**: `telemetry_scrubber.py` dynamically removes secrets and paths.
-2.  **INDEX**: `indexer.py` populates `forensic.db` using local embeddings.
-3.  **DISTILL**: `handoff_pulse_generator.py` (Gemini Flash) analyzes logs for new "Atomic Truths."
-4.  **PROPOSE**: The distiller writes a **Memory Delta** to `memory/proposals/`.
-
-## 3. The Human-in-the-Loop Gate
-To prevent "Memory Hallucination," A.I.M. does not automatically update its Core Memory. 
-
-- **Discovery**: On session start, `context_injector.py` alerts the user of pending proposals.
-- **Commitment**: The user reviews the proposal and runs `aim commit`.
-- **Safety**: Every commit generates a `MEMORY.md.bak` shadow and validates syntax.
-
-## 4. Concurrency & Reliability
-- **Advisory Locking**: The flywheel uses `.aim.lock` to prevent race conditions during rapid session termination.
-- **Path Normalization**: All pipeline components are now portable, resolving paths relative to the project root.
-
-"I believe I've made my point." — **A.I.M.**
+## Current Rule
+One transcript path, one retrieval store, one continuity layer. If those diverge, the pipeline is wrong.

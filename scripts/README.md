@@ -8,8 +8,8 @@ This directory contains the operational layer of A.I.M.
 3. **Sovereign Execution:** Scripts should leverage the project-local `venv` for dependencies.
 
 ## Key Scripts
-- `aim_cli.py`: The main entry point (`aim`). Dispatches all commands.
-- `aim_config.py`: The TUI Cockpit (`aim config`) for interactive configuration.
+- `aim_cli.py`: The main entry point (`aim-codex`). Dispatches all commands.
+- `aim_config.py`: The TUI Cockpit (`aim-codex config`) for interactive configuration.
 - `aim_init.py`: Workspace scaffolding and initialization.
 - `telemetry_scrubber.py`: Dynamic privacy hardening.
 - `obsidian_sync.py`: Mirrors logs to an external Obsidian vault.

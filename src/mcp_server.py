@@ -49,11 +49,11 @@ def search_engram(query: str) -> str:
 
 @mcp.resource("aim://project-context")
 def get_project_context() -> str:
-    """Provides the high-level project context from GEMINI.md."""
-    path = os.path.join(AIM_ROOT, "GEMINI.md")
+    """Provides the high-level project context from AGENTS.md."""
+    path = os.path.join(AIM_ROOT, "AGENTS.md")
     if os.path.exists(path):
         with open(path, 'r') as f: return f.read()
-    return "GEMINI.md not found."
+    return "AGENTS.md not found."
 
 if __name__ == "__main__":
     # MCP servers for IDEs typically use the 'stdio' transport

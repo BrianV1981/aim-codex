@@ -45,9 +45,9 @@ def print_knowledge_map():
     if k_map["session_history"]:
         print(f"\n## SESSION HISTORY")
         print(f"  - {len(k_map['session_history'])} historical sessions indexed.")
-        print(f"    (Use 'aim search' with --session to narrow down specific events)")
+        print(f"    (Use 'aim-codex search' with --session to narrow down specific events)")
     
-    print("\nUse 'aim search \"<filename>\" --full' to surgically recall specific keys.")
+    print("\nUse 'aim-codex search \"<filename>\" --full' to surgically recall specific keys.")
 
 def perform_search(query, top_k=10, show_context=False):
     db = ForensicDB()

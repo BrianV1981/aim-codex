@@ -1,31 +1,39 @@
-# A.I.M. Internal Tools Manifest
+# A.I.M. Tools Manifest
 
-A.I.M. has access to custom internal tools for workspace orchestration and forensic memory.
+This manifest describes the active internal surfaces that matter in `aim-codex`.
 
-## 1. Forensic Search & Retrieval (`retriever.py`)
-- **Usage:** `aim search "<query>"`
-- **Function:** Performs a sub-millisecond semantic search through `archive/engram.db` (SQLite).
-- **Protocol:** Mandated by `GEMINI.md`. Use this BEFORE starting complex tasks to "remember" previous context or solutions. Zero-token alternative to asking the Operator.
+## 1. Root Soul
+- File: `AGENTS.md`
+- Role: root instruction file for this repository
 
-## 2. Session Indexer (`indexer.py`)
-- **Usage:** `aim index`
-- **Function:** Parses raw JSON transcripts into semantic fragments and stores them in `engram.db`.
-- **Note:** Automatically maintains `sessions` metadata (mtime) to avoid redundant indexing.
+## 2. Retrieval
+- Entry: `src/retriever.py`
+- CLI: `aim-codex search "<query>"`
+- Purpose: retrieve historical technical context from `archive/engram.db`
 
-## 3. Stateful Scrivener (`tier1_hourly_summarizer.py`)
-- **Usage:** Automated via `SessionEnd`, `AfterTool`, and `PreCompress` hooks.
-- **Function:** Deterministically extracts technical essence (Intents, Actions, Outcomes) into daily narrative logs.
-- **Advanced Logic:** Uses strictly location-based root discovery (`__file__`) and aggressive fuzzy retrieval to find transcript files matching Gemini CLI hashing patterns.
+## 3. Indexing
+- Entry: `src/indexer.py`
+- CLI: `aim-codex index`
+- Purpose: convert archived transcripts and indexed material into searchable fragments
 
-## 4. Flash Distiller (`handoff_pulse_generator.py`)
-- **Usage:** `aim handoff` (or automated via Flywheel).
-- **Function:** AI-backed analysis of logs to generate **Context Pulses** (`continuity/`) and **Memory Proposals** (`memory/proposals/`).
-- **Goal:** Synthesizes raw technical trace into distilled mental models.
+## 4. Foundation Bootstrap
+- Entry: `src/bootstrap_brain.py`
+- Purpose: synchronize foundation knowledge into the Engram DB
 
-## 5. Pre-Compression Shield (`hooks/pre_compress_checkpoint.py`)
-- **Usage:** Automated via `PreCompress` hook.
-- **Function:** Protects session history from context window summarization by forcing an immediate archival pulse exactly before history is pruned.
+## 5. Continuity
+- Pulse generation: `src/handoff_pulse_generator.py`
+- Snapshot and tail maintenance: `hooks/failsafe_context_snapshot.py`
+- Startup injection: `hooks/context_injector.py`
 
-## 6. Auto-Versioning Push (`aim_push.sh`)
-- **Usage:** `aim push "<commit message>"`
-- **Function:** Stages changes, generates a unique semantic version, and pushes to the current branch.
+## 6. MCP
+- Entry: `src/mcp_server.py`
+- Purpose: expose retrieval and project context externally
+
+## 7. Docs
+- Overview: `README.md`
+- Architecture: `docs/A_I_M_HANDBOOK.md`
+- Startup: `docs/GETTING_STARTED.md`
+- Hook lifecycle: `hooks/HOOKS_INDEX.md`
+
+## Usage Rule
+When working in this repo, prefer the current runtime files and the lean doc set over any older assumptions.

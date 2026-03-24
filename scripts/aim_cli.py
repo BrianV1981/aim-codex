@@ -46,7 +46,7 @@ def cmd_status(args):
         with open(status_file, 'r') as f:
             print(f.read())
     else:
-        print("Error: CURRENT_PULSE.md not found. Run 'aim handoff' to generate.", file=sys.stderr)
+        print("Error: CURRENT_PULSE.md not found. Run 'aim-codex handoff' to generate.", file=sys.stderr)
 
 def cmd_search(args):
     """Dispatches to retriever.py."""

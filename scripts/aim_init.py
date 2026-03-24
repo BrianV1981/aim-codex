@@ -83,18 +83,18 @@ T_CONFIG = """{{
     "archive_index_dir": "{aim_root}/archive/index",
     "continuity_dir": "{aim_root}/continuity",
     "src_dir": "{aim_root}/src",
-    "tmp_chats_dir": "{gemini_tmp}"
+    "tmp_chats_dir": "{codex_tmp}"
   }},
   "models": {{
     "embedding_provider": "local",
     "embedding": "nomic-embed-text",
     "embedding_endpoint": "http://localhost:11434/api/embeddings",
-    "reasoning_provider": "google",
-    "reasoning_model": "gemini-flash-latest",
-    "reasoning_endpoint": "https://generativelanguage.googleapis.com",
-    "sentinel_provider": "google",
-    "sentinel_model": "gemini-flash-latest",
-    "sentinel_endpoint": "https://generativelanguage.googleapis.com"
+    "reasoning_provider": "openai",
+    "reasoning_model": "gpt-5.4",
+    "reasoning_endpoint": "https://api.openai.com/v1",
+    "sentinel_provider": "openai",
+    "sentinel_model": "gpt-5.4-mini",
+    "sentinel_endpoint": "https://api.openai.com/v1"
   }},
   "settings": {{
     "allowed_root": "{allowed_root}",
@@ -106,59 +106,29 @@ T_CONFIG = """{{
 }}
 """
 
-def register_hooks(cli_type="codex"):
-    if cli_type == "gemini":
-        settings_path = os.path.expanduser("~/.gemini/settings.json")
-        hook_events = {
-            "SessionStart": [("pulse-injector", "context_injector.py")],
-            "SessionEnd": [("tier1-hourly-summarizer", "tier1_hourly_summarizer.py")],
-            "AfterTool": [("failsafe-context-snapshot", "failsafe_context_snapshot.py")],
-            "PreCompress": [("pre-compress-checkpoint", "pre_compress_checkpoint.py")],
-            "BeforeTool": [
-                ("safety-sentinel", "safety_sentinel.py", "run_shell_command"),
-                ("secret-shield", "secret_shield.py", "write_file|replace"),
-                ("workspace-guardrail", "workspace_guardrail.py")
-            ]
-        }
-        
-        if not os.path.exists(settings_path): return
-        try:
+def register_hooks():
+    codex_dir = os.path.expanduser("~/.codex")
+    settings_path = os.path.join(codex_dir, "hooks.json")
+    os.makedirs(codex_dir, exist_ok=True)
+
+    hook_events = {
+        "UserPromptSubmit": f"{VENV_PYTHON} {os.path.join(HOOKS_DIR, 'context_injector.py')}",
+        "agent-turn-complete": f"{VENV_PYTHON} {os.path.join(HOOKS_DIR, 'failsafe_context_snapshot.py')}",
+        "Stop": f"{VENV_PYTHON} {os.path.join(SRC_DIR, 'handoff_pulse_generator.py')}"
+    }
+
+    try:
+        settings = {}
+        if os.path.exists(settings_path):
             with open(settings_path, 'r') as f: settings = json.load(f)
-            if "hooks" not in settings: settings["hooks"] = {}
-            for event, hooks in hook_events.items():
-                settings["hooks"][event] = []
-                for h in hooks:
-                    entry = { "name": h[0], "type": "command", "command": f"{VENV_PYTHON} {os.path.join(HOOKS_DIR, h[1])}" }
-                    if len(h) > 2: entry["matcher"] = h[2]
-                    settings["hooks"][event].append({"hooks": [entry]})
-            with open(settings_path, 'w') as f: json.dump(settings, f, indent=2)
-            print("[OK] Gemini hooks registered.")
-        except Exception as e: print(f"[ERROR] Hook registration: {e}")
-        
-    elif cli_type == "codex":
-        codex_dir = os.path.expanduser("~/.codex")
-        settings_path = os.path.join(codex_dir, "hooks.json")
-        os.makedirs(codex_dir, exist_ok=True)
-        
-        # Codex Hook Translation (Phase 22)
-        hook_events = {
-            "UserPromptSubmit": f"{VENV_PYTHON} {os.path.join(HOOKS_DIR, 'context_injector.py')}",
-            "agent-turn-complete": f"{VENV_PYTHON} {os.path.join(HOOKS_DIR, 'failsafe_context_snapshot.py')}",
-            "Stop": f"{VENV_PYTHON} {os.path.join(SRC_DIR, 'handoff_pulse_generator.py')}"
-            # Note: Codex doesn't currently support BeforeTool/PreCompress equivalents
-        }
-        
-        try:
-            settings = {}
-            if os.path.exists(settings_path):
-                with open(settings_path, 'r') as f: settings = json.load(f)
-                
-            for event, command in hook_events.items():
-                settings[event] = command
-                
-            with open(settings_path, 'w') as f: json.dump(settings, f, indent=2)
-            print("[OK] Codex hooks registered.")
-        except Exception as e: print(f"[ERROR] Codex Hook registration: {e}")
+
+        for event, command in hook_events.items():
+            settings[event] = command
+
+        with open(settings_path, 'w') as f: json.dump(settings, f, indent=2)
+        print("[OK] Codex hooks registered.")
+    except Exception as e:
+        print(f"[ERROR] Codex hook registration: {e}")
 
 def trigger_bootstrap():
     print("\n--- PROJECT SINGULARITY: BOOTSTRAPPING BRAIN ---")
@@ -196,13 +166,7 @@ def init_workspace():
 
     name, stack, style, obsidian_path = "Operator", "General", "Direct", ""
     physical, rules, goals, business, grok_profile = "N/A", "N/A", "N/A", "None provided.", "None."
-    cli_type = "codex"
-
     if mode != "UPDATE":
-        print("\n[PART 0: THE ENGINE]")
-        cli_choice = input("Select Primary CLI (1: Gemini [Default], 2: Codex): ").strip()
-        if cli_choice == "2": cli_type = "codex"
-
         print("\n[PART 1: THE SOUL]")
         name = input("Your Name: ").strip() or name
         stack = input("Core Tech Stack: ").strip() or stack
@@ -236,22 +200,17 @@ def init_workspace():
             "continuity/private", "continuity", "workstreams", "hooks", "scripts", "projects", "synapse"]
     for d in dirs: os.makedirs(os.path.join(BASE_DIR, d), exist_ok=True)
 
-    register_hooks(cli_type)
+    register_hooks()
 
     date_str = datetime.now().strftime("%Y-%m-%d")
     home = os.path.expanduser("~")
     
-    # Determine temp transcript directory and soul filename based on CLI
-    if cli_type == "codex":
-        tmp_chats_dir = os.path.join(home, ".codex/memories")
-        soul_filename = "AGENTS.md"
-    else:
-        tmp_chats_dir = os.path.join(home, ".gemini/tmp/aim/chats")
-        soul_filename = "GEMINI.md"
+    tmp_chats_dir = os.path.join(home, ".codex/memories")
+    soul_filename = "AGENTS.md"
     
     # 1. Generate identity trinity
     files = {
-        f"{soul_filename}": T_SOUL.format(name=name),
+        soul_filename: T_SOUL.format(name=name),
         "core/USER.md": T_USER.format(name=name, stack=stack, style=style, physical=physical, rules=rules, goals=goals, business=business, grok_profile=grok_profile),
         "core/MEMORY.md": T_MEMORY.format(name=name, date=date_str),
     }
@@ -263,7 +222,7 @@ def init_workspace():
             
     config_path = os.path.join(CORE_DIR, "CONFIG.json")
     if mode == "OVERWRITE" or not os.path.exists(config_path):
-        config_content = T_CONFIG.format(aim_root=BASE_DIR, gemini_tmp=tmp_chats_dir, allowed_root=allowed_root, obsidian_path=obsidian_path)
+        config_content = T_CONFIG.format(aim_root=BASE_DIR, codex_tmp=tmp_chats_dir, allowed_root=allowed_root, obsidian_path=obsidian_path)
         with open(config_path, 'w') as f: f.write(config_content)
 
     trigger_bootstrap()

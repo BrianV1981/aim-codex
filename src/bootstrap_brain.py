@@ -33,7 +33,7 @@ def bootstrap_foundation():
     
     # 1. Base Project Soul (Synchronized)
     foundation_targets = [
-        os.path.join(AIM_ROOT, "GEMINI.md"),
+        os.path.join(AIM_ROOT, "AGENTS.md"),
         os.path.join(AIM_ROOT, "docs/*.md"),
         os.path.join(AIM_ROOT, "core/*.md")
     ]

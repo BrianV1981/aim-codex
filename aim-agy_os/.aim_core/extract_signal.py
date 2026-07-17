@@ -6,6 +6,7 @@ Supports:
   - Grok chat_history.jsonl (type: user|assistant|system|reasoning)
   - Grok updates.jsonl (method: session/update with user_message_chunk / agent_*)
   - AGY-style role/type message JSONL
+  - OpenCode archive/raw session-*.json (single JSON messages[])
 """
 from __future__ import annotations
 
@@ -232,6 +233,60 @@ def extract_signal_from_chat_style(json_path: str) -> Signal:
     return signal
 
 
+def extract_signal_from_opencode_session(json_path: str) -> Signal:
+    """
+    OpenCode vessel session export (single JSON, not JSONL)::
+
+        {"sessionId": "...", "messages": [{"type":"user"|"assistant", "content":[{"text":...}]}, ...]}
+
+    Also accepts a bare list of message objects.
+    """
+    signal: Signal = []
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            raw = f.read()
+        data = json.loads(raw)
+    except (OSError, json.JSONDecodeError):
+        return signal
+
+    messages: List[Any] = []
+    if isinstance(data, dict):
+        messages = data.get("messages") or data.get("turns") or []
+    elif isinstance(data, list):
+        messages = data
+    if not isinstance(messages, list):
+        return signal
+
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        m_role = (msg.get("type") or msg.get("role") or "").lower()
+        if m_role in ("human",):
+            m_role = "user"
+        if m_role in ("ai", "model", "bot"):
+            m_role = "assistant"
+        if m_role not in ("user", "assistant", "system", "agy", "model"):
+            continue
+        text = _process_content(msg.get("content"))
+        if not text.strip() and isinstance(msg.get("text"), str):
+            text = msg["text"]
+        if not text.strip():
+            continue
+        if m_role == "model":
+            m_role = "assistant"
+        fragment: Dict[str, Any] = {
+            "role": m_role,
+            "timestamp": msg.get("timestamp", "Unknown"),
+            "text": text,
+        }
+        if m_role in ("assistant", "agy"):
+            fragment["thoughts"] = []
+            fragment["actions"] = []
+        signal.append(fragment)
+    return signal
+
+
+
 def extract_signal_from_agy_transcript(json_path: str) -> Signal:
     """
     Antigravity brain transcript.jsonl:
@@ -390,7 +445,34 @@ def extract_signal_from_codex_rollout(json_path: str) -> Signal:
     return signal
 
 
+def _looks_like_opencode_session_blob(path: str) -> bool:
+    """True if path is a single-JSON OpenCode session export."""
+    base = os.path.basename(path)
+    norm = path.replace("\\", "/")
+    if base.startswith("session-") and base.endswith(".json"):
+        return True
+    if "/archive/raw/" in norm and base.endswith(".json") and not base.endswith(".jsonl"):
+        return True
+    # Peek: whole-file JSON with messages[]
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            head = f.read(4096).lstrip()
+        if not head.startswith("{"):
+            return False
+        # cheap heuristic before full parse
+        if '"messages"' in head or '"sessionId"' in head:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return isinstance(data, dict) and isinstance(data.get("messages"), list)
+    except (OSError, json.JSONDecodeError, ValueError):
+        return False
+    return False
+
+
+
 def detect_jsonl_kind(json_path: str) -> str:
+    if _looks_like_opencode_session_blob(json_path):
+        return "opencode_session"
     """Return 'grok_updates' | 'codex_rollout' | 'agy_transcript' | 'chat_style' | 'unknown'.
 
     Scan enough leading rows: AGY brain transcripts frequently start with
@@ -474,6 +556,8 @@ def extract_signal(json_path: str) -> ExtractResult:
     """
     try:
         kind = detect_jsonl_kind(json_path)
+        if kind == "opencode_session":
+            return extract_signal_from_opencode_session(json_path)
         if kind == "codex_rollout" or (
             kind == "unknown"
             and os.path.basename(json_path).startswith("rollout-")
@@ -510,6 +594,10 @@ def extract_signal(json_path: str) -> ExtractResult:
                 json_path
             ).startswith("rollout-"):
                 return extract_signal_from_codex_rollout(json_path)
+        if not signal or conversational_turn_count(signal) < 1:
+            oc_sig = extract_signal_from_opencode_session(json_path)
+            if conversational_turn_count(oc_sig) > 0:
+                return oc_sig
         return signal
     except Exception as e:
         return f"Extraction Error: {e}"

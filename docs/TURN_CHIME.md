@@ -12,7 +12,7 @@ Operator cue when an agent **ends a turn** so you can look back without staring 
 | **Grok** | `Stop` / `StopFailure` | `~/.grok/hooks/aim-turn-chime.json` (+ project `.grok/hooks/`) |
 | **OpenCode** | `session.idle` | `aim-hooks.ts` shells out to `aim_turn_chime.sh` |
 | **AGY** | `AfterAgent` | `~/.gemini/settings.json` → `aim_turn_chime.sh after_agent` |
-| **Codex** | `agent-turn-complete` / `Stop` | `~/.codex/hooks.json` → `aim_turn_chime.sh` |
+| **Codex** | ``Stop` (+ config.toml `notify`) | `~/.codex/hooks.json` → `aim_turn_chime.sh` |
 
 ## Install (this host)
 

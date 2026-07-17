@@ -11,6 +11,12 @@ aim-agy_os/memory/
 aim-agy_os/memory_lance/
 aim-agy_os/workspace/
 aim-agy_os/archive/
+# Vessel black box (encrypted raw sessions) + host key material
+archive/.raw_jsonl_blackbox/
+**/.raw_jsonl_blackbox/
+**/*.enc
+.aim/blackbox.key
+**/blackbox.key
 aim-agy_os/continuity/
 aim-agy_os/memory-wiki/
 aim-agy_os/foundry/

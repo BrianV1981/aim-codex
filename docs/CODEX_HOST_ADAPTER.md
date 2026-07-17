@@ -1,22 +1,46 @@
-# Codex host adapter boundary
+# Codex host adapter
 
-## Observed local session layout
-
-On this host, Codex stores session data beneath:
+## Session layout (production)
 
 ```text
-~/.codex/sessions/YYYY/MM/
+~/.codex/sessions/YYYY/MM/rollout-<iso>-<session_id>.jsonl
 ```
 
-This is an observed filesystem location, not yet a stable A.I.M. parser contract. The format, conversation identity mapping, and retention behavior must be inspected with fixture-based tests before any production pulse or reincarnation reader is implemented.
+First records often:
 
-## Foundation decision
+```json
+{"type":"session_meta","payload":{"session_id":"...","cwd":"/home/kingb/aim-codex",...}}
+```
 
-The shared `aim-agy_os/.aim_core/` engine remains aligned to the soul pin in `SOURCE.md`. Codex-specific transcript discovery and tmux spawning will be an overlay, ideally behind a small `vessel_paths`/adapter interface. They are intentionally not implemented during vessel onboarding.
+Dialogue:
 
-## Next adapter ticket
+- `response_item` / `payload.type=message` / `role=user|assistant`
+- `event_msg` / `user_message` | `agent_message`
 
-1. Capture a sanitized Codex session fixture from `~/.codex/sessions/`.
-2. Define a Codex session resolver with no AGY or Grok fallback paths.
-3. Add unit tests for discovery and signal extraction.
-4. Implement gameplan-only pulse/reincarnation first; add tmux `codex` teleport only after the resolver passes.
+## Code map
+
+| Concern | Module |
+|---------|--------|
+| Discovery | `aim-agy_os/.aim_core/vessel_paths.py` |
+| Signal extract | `extract_signal.extract_signal_from_codex_rollout` |
+| Pulse | `handoff_pulse_generator` → vessel_paths auto |
+| Teleport | `reincarnation/teleport_engine.py` (`AIM_VESSEL_CLI=codex`) |
+| Session names | `session_naming.vessel_cli_id` → `codex_*` |
+
+## Operator commands
+
+```bash
+cd /home/kingb/aim-codex
+./aim doctor
+./aim pulse
+# exclusive:
+aim-agy_os/venv/bin/python3 aim-agy_os/.aim_core/handoff_pulse_generator.py \
+  --session-id <uuid-from-rollout-filename>
+
+AIM_REINCARNATE_NO_TELEPORT=1 AIM_VESSEL_CLI=codex ./aim reincarnate
+```
+
+## Communicate
+
+Submit to Codex/Grok: **Enter only**.  
+Orchestrator this campaign: **`aim-grok`**.

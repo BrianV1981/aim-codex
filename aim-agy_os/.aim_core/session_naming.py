@@ -9,12 +9,21 @@ import time
 def vessel_cli_id(env: dict | None = None) -> str:
     """Return sanitized vessel id used as the session prefix.
 
-    aim-agy default is ``agy``. Override with ``AIM_VESSEL_CLI`` (e.g. grok, opencode).
+    aim-codex default is ``codex``. Override with ``AIM_VESSEL_CLI``.
     """
     source = env if env is not None else os.environ
-    raw = (source.get("AIM_VESSEL_CLI") or "agy").strip().lower()
+    default = "codex"
+    # Heuristic when env unset: cwd name
+    if not (source.get("AIM_VESSEL_CLI") or "").strip():
+        try:
+            base = os.path.basename(os.getcwd())
+            if base.startswith("aim-codex") or "aim-codex" in os.getcwd():
+                default = "codex"
+        except Exception:
+            pass
+    raw = (source.get("AIM_VESSEL_CLI") or default).strip().lower()
     cleaned = "".join(c if c.isalnum() or c in "-_" else "_" for c in raw)
-    return cleaned or "agy"
+    return cleaned or "codex"
 
 
 def get_project_slug(workspace_dir: str | None = None) -> str:

@@ -1,0 +1,5 @@
+{"timestamp": "2026-07-17T05:10:26.600Z", "type": "session_meta", "payload": {"session_id": "019f6e7b-test-fixture-codex-0001", "id": "019f6e7b-test-fixture-codex-0001", "cwd": "/home/kingb/aim-codex", "originator": "codex-tui", "cli_version": "0.144.5", "source": "cli"}}
+{"timestamp": "2026-07-17T05:11:00.000Z", "type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "OPERATOR_MARKER_CODEX_PULSE_TEST remember PHOENIX_CODEX"}]}}
+{"timestamp": "2026-07-17T05:11:05.000Z", "type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Acknowledged PHOENIX_CODEX marker for pulse test."}]}}
+{"timestamp": "2026-07-17T05:11:06.000Z", "type": "event_msg", "payload": {"type": "user_message", "message": "follow-up directive ALPHA"}}
+{"timestamp": "2026-07-17T05:11:07.000Z", "type": "event_msg", "payload": {"type": "agent_message", "message": "Got ALPHA."}}

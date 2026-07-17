@@ -10,6 +10,7 @@ Supports:
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from typing import Any, Dict, List, Optional, Union
@@ -307,8 +308,90 @@ _AGY_TOOLISH_TYPES = frozenset(
 _AGY_SOURCES = frozenset({"MODEL", "USER_EXPLICIT", "SYSTEM", "USER"})
 
 
+def _codex_payload_text(content: Any) -> str:
+    """Flatten Codex content arrays or plain strings."""
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                parts.append(str(item.get("text") or ""))
+            else:
+                parts.append(str(item))
+        return "\n".join(p for p in parts if p).strip()
+    if isinstance(content, dict):
+        return str(content.get("text") or content.get("message") or "").strip()
+    return str(content).strip()
+
+
+def extract_signal_from_codex_rollout(json_path: str) -> Signal:
+    """
+    Codex CLI rollout-*.jsonl under ~/.codex/sessions/YYYY/MM/.
+
+    Outer rows: {timestamp, type, payload}
+    Dialogue from:
+      - response_item + payload.type=message + role user|assistant
+      - event_msg + payload.type user_message|agent_message
+    Skips tools, reasoning, token_count, developer system injections when huge.
+    """
+    signal: Signal = []
+    with open(json_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                msg = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(msg, dict):
+                continue
+            ts = msg.get("timestamp") or "Unknown"
+            outer = msg.get("type") or ""
+            pl = msg.get("payload")
+            if not isinstance(pl, dict):
+                continue
+
+            if outer == "response_item" and pl.get("type") == "message":
+                role = (pl.get("role") or "").lower()
+                if role not in ("user", "assistant"):
+                    continue
+                text = _codex_payload_text(pl.get("content"))
+                # skip AGENTS.md injection / developer blobs
+                if role == "user" and text.lstrip().startswith("# AGENTS.md"):
+                    continue
+                if not text:
+                    continue
+                signal.append({"role": role, "timestamp": ts, "text": text})
+                continue
+
+            if outer == "event_msg":
+                et = pl.get("type") or ""
+                if et == "user_message":
+                    text = (pl.get("message") or pl.get("text") or "").strip()
+                    if text and not text.lstrip().startswith("# AGENTS.md"):
+                        signal.append(
+                            {"role": "user", "timestamp": ts, "text": text}
+                        )
+                elif et == "agent_message":
+                    text = (pl.get("message") or pl.get("text") or "").strip()
+                    if text:
+                        signal.append(
+                            {
+                                "role": "assistant",
+                                "timestamp": ts,
+                                "text": text,
+                                "thoughts": [],
+                                "actions": [],
+                            }
+                        )
+    return signal
+
+
 def detect_jsonl_kind(json_path: str) -> str:
-    """Return 'grok_updates' | 'agy_transcript' | 'chat_style' | 'unknown'.
+    """Return 'grok_updates' | 'codex_rollout' | 'agy_transcript' | 'chat_style' | 'unknown'.
 
     Scan enough leading rows: AGY brain transcripts frequently start with
     GENERIC/tool events (still have ``type``), which must not be labeled
@@ -316,6 +399,7 @@ def detect_jsonl_kind(json_path: str) -> str:
     """
     saw_agy_toolish = False
     saw_chat_role = False
+    saw_codex = False
     try:
         with open(json_path, "r", encoding="utf-8") as f:
             for _ in range(200):
@@ -333,6 +417,18 @@ def detect_jsonl_kind(json_path: str) -> str:
                 if _is_grok_updates_line(msg):
                     return "grok_updates"
                 t = msg.get("type") or ""
+                # Codex rollout envelope
+                if t in (
+                    "session_meta",
+                    "response_item",
+                    "event_msg",
+                    "turn_context",
+                    "world_state",
+                ) and isinstance(msg.get("payload"), (dict, type(None))):
+                    saw_codex = True
+                    if t == "session_meta":
+                        return "codex_rollout"
+                    continue
                 src = msg.get("source") or ""
                 if t in _AGY_DIALOGUE_TYPES:
                     return "agy_transcript"
@@ -357,10 +453,15 @@ def detect_jsonl_kind(json_path: str) -> str:
                     continue
     except OSError:
         pass
+    if saw_codex:
+        return "codex_rollout"
     if saw_agy_toolish:
         return "agy_transcript"
     if saw_chat_role:
         return "chat_style"
+    base = os.path.basename(json_path)
+    if base.startswith("rollout-") and base.endswith(".jsonl"):
+        return "codex_rollout"
     if json_path.endswith("transcript.jsonl"):
         return "agy_transcript"
     return "unknown"
@@ -373,6 +474,11 @@ def extract_signal(json_path: str) -> ExtractResult:
     """
     try:
         kind = detect_jsonl_kind(json_path)
+        if kind == "codex_rollout" or (
+            kind == "unknown"
+            and os.path.basename(json_path).startswith("rollout-")
+        ):
+            return extract_signal_from_codex_rollout(json_path)
         if kind == "grok_updates" or (
             kind == "unknown" and json_path.endswith("updates.jsonl")
         ):
@@ -398,6 +504,12 @@ def extract_signal(json_path: str) -> ExtractResult:
                 signal if isinstance(signal, list) else []
             ):
                 return agy_sig
+        # Recover Codex
+        if not signal or conversational_turn_count(signal) < 1:
+            if "codex/sessions" in json_path.replace("\\", "/") or os.path.basename(
+                json_path
+            ).startswith("rollout-"):
+                return extract_signal_from_codex_rollout(json_path)
         return signal
     except Exception as e:
         return f"Extraction Error: {e}"

@@ -115,14 +115,37 @@ def find_agy_transcripts(explicit_session_id=None, project_dir=None):
 
 def generate_handoff_pulse(explicit_session_id=None) -> int:
     project_dir = os.path.abspath(PROJECT_ROOT if PROJECT_ROOT else AIM_ROOT)
-    raw_files = find_agy_transcripts(explicit_session_id, project_dir)
+    raw_files = []
+
+    # Codex-first via vessel_paths (also Grok/AGY fallbacks)
+    try:
+        from vessel_paths import find_session_transcripts, session_id_from_transcript_path
+
+        raw_files = find_session_transcripts(
+            project_dir,
+            explicit_session_id=explicit_session_id,
+            prefer="auto",
+        )
+        if raw_files:
+            print(
+                f"Handoff Generator: Found {len(raw_files)} transcript(s) via vessel_paths"
+            )
+            if explicit_session_id:
+                print(
+                    f"Handoff Generator: EXCLUSIVE session_id={explicit_session_id}"
+                )
+    except Exception as e:
+        print(f"Handoff Generator: vessel_paths unavailable ({e}); AGY fallback")
+
+    if not raw_files:
+        raw_files = find_agy_transcripts(explicit_session_id, project_dir)
 
     if not raw_files and not explicit_session_id:
         raw_files = glob.glob(os.path.join(ARCHIVE_RAW_DIR, "*.jsonl"))
 
     if not raw_files:
         print(
-            f"Handoff Generator: [FATAL] No AGY transcripts "
+            f"Handoff Generator: [FATAL] No transcripts found "
             f"(session_id={explicit_session_id!r})."
         )
         return 1
@@ -149,7 +172,12 @@ def generate_handoff_pulse(explicit_session_id=None) -> int:
     try:
         skeleton = extract_signal(latest_transcript)
         turn_count = conversational_turn_count(skeleton)
-        session_id = session_id_from_agy_path(latest_transcript)
+        try:
+            from vessel_paths import session_id_from_transcript_path as _sid
+
+            session_id = _sid(latest_transcript)
+        except Exception:
+            session_id = session_id_from_agy_path(latest_transcript)
         print(
             f"Handoff Generator: session_id={session_id} source={latest_transcript} "
             f"conversational_turns={turn_count}"

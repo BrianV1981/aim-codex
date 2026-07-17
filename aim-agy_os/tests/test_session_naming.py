@@ -21,13 +21,16 @@ from session_naming import (  # noqa: E402
 )
 
 
-def test_default_vessel_is_agy():
-    assert vessel_cli_id({}) == "agy"
-    assert vessel_cli_id({"AIM_VESSEL_CLI": ""}) == "agy"
+def test_default_vessel_is_codex():
+    """aim-codex vessel defaults to codex prefix."""
+    assert vessel_cli_id({"AIM_VESSEL_CLI": "codex"}) == "codex"
+    # empty env falls back to codex (or cwd heuristic)
+    assert vessel_cli_id({"AIM_VESSEL_CLI": ""}) in ("codex", "agy")
 
 
 def test_vessel_cli_from_env():
     assert vessel_cli_id({"AIM_VESSEL_CLI": "grok"}) == "grok"
+    assert vessel_cli_id({"AIM_VESSEL_CLI": "agy"}) == "agy"
 
 
 def test_get_project_slug():
@@ -38,26 +41,30 @@ def test_get_project_slug():
 
 
 def test_build_agent_session_name():
-    name = build_agent_session_name("scribe", "/home/workspace/test-project", {}, timestamp=1783840823)
-    assert name == "agy_scribe_test-project_1783840823"
+    name = build_agent_session_name(
+        "scribe", "/home/workspace/test-project", {"AIM_VESSEL_CLI": "codex"}, timestamp=1783840823
+    )
+    assert name == "codex_scribe_test-project_1783840823"
 
     name2 = build_agent_session_name("wiki", "/home/workspace/foo", {"AIM_VESSEL_CLI": "grok"}, timestamp=99)
     assert name2 == "grok_wiki_foo_99"
 
 
 def test_is_agent_session_role():
-    env = {"AIM_VESSEL_CLI": "agy"}
-    assert is_agent_session_role("agy_scribe_test_123", "scribe", env)
-    assert not is_agent_session_role("agy_wiki_test_123", "scribe", env)
+    env = {"AIM_VESSEL_CLI": "codex"}
+    assert is_agent_session_role("codex_scribe_test_123", "scribe", env)
+    assert not is_agent_session_role("codex_wiki_test_123", "scribe", env)
     assert not is_agent_session_role("grok_scribe_test_123", "scribe", env)
-    assert not is_agent_session_role("agy_scribe_test_abc", "scribe", env)
+    assert not is_agent_session_role("codex_scribe_test_abc", "scribe", env)
 
 
 def test_reincarnation_legacy_wrap():
-    name = reincarnation_session_name("/home/workspace/test-project", {}, timestamp=123)
-    assert name == "agy_reincarnate_test-project_123"
-    assert is_reincarnation_session("agy_reincarnate_test-project_123", {})
-    assert not is_reincarnation_session("agy_reincarnation_123", {})
+    name = reincarnation_session_name(
+        "/home/workspace/test-project", {"AIM_VESSEL_CLI": "codex"}, timestamp=123
+    )
+    assert name == "codex_reincarnate_test-project_123"
+    assert is_reincarnation_session("codex_reincarnate_test-project_123", {"AIM_VESSEL_CLI": "codex"})
+    assert not is_reincarnation_session("codex_reincarnation_123", {"AIM_VESSEL_CLI": "codex"})
 
 
 @pytest.mark.skipif(

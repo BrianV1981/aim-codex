@@ -1,4 +1,17 @@
 {
-  "agent-turn-complete": "bash \"$HOME/.aim/bin/aim_turn_chime.sh\" agent_turn_complete",
-  "Stop": "bash \"$HOME/.aim/bin/aim_turn_chime.sh\" stop"
+  "description": "A.I.M. turn-done desktop/popup notify for Codex",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.aim/bin/aim_turn_chime.sh\" stop",
+            "timeout": 5,
+            "statusMessage": "A.I.M. turn notify"
+          }
+        ]
+      }
+    ]
+  }
 }

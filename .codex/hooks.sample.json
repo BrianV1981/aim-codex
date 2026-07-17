@@ -1,0 +1,4 @@
+{
+  "agent-turn-complete": "bash \"$HOME/.aim/bin/aim_turn_chime.sh\" agent_turn_complete",
+  "Stop": "bash \"$HOME/.aim/bin/aim_turn_chime.sh\" stop"
+}

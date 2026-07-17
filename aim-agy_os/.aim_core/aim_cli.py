@@ -495,6 +495,7 @@ def cmd_reincarnate(args):
         rein_args += ["--no-teleport"]
     run_script(os.path.join(AIM_CORE_DIR, "aim_reincarnate.py"), rein_args)
 
+
 def cmd_vault(args):
     """Operator forensic black box (audit/verify/seal). Non-agent critical path."""
     sys.path.insert(0, AIM_CORE_DIR)
@@ -932,7 +933,7 @@ def main():
     subparsers.add_parser("sync")
     subparsers.add_parser("sync-issues", help="Synchronize remote GitHub issues to local ledger")
 
-
+    
     vault_parser = subparsers.add_parser(
         "vault",
         help="Operator black-box forensic seal (audit/verify; seal is reincarnate-policy)",

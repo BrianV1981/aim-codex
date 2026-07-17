@@ -1,0 +1,19 @@
+# Codex vessel runtime state (never publish)
+.gemini/
+.geminiignore
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# A.I.M. mutable runtime data (the engine source remains tracked)
+aim-agy_os/venv/
+aim-agy_os/memory/
+aim-agy_os/memory_lance/
+aim-agy_os/workspace/
+aim-agy_os/archive/
+aim-agy_os/continuity/
+aim-agy_os/memory-wiki/
+aim-agy_os/foundry/
+aim-agy_os/planning-artifacts/
+aim-agy_os/.aim_core/CONFIG.json
+aim-agy_os/.aim_core/temp/

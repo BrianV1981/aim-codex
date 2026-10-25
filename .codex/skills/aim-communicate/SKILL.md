@@ -107,20 +107,20 @@ Prefer paths under the target or sender project (`planning-artifacts/`, `docs/`)
 
 ```bash
 # Auto-detect FROM session; force REPLY_TO into the message prefix if missing:
-bash /home/kingb/grok-audit/.grok/skills/aim-communicate/scripts/tmux_send.sh \
+bash ~/grok-audit/.grok/skills/aim-communicate/scripts/tmux_send.sh \
   --target grok-audit \
   --from "$(tmux display-message -p '#{session_name}')" \
   --reply-to grok-audit \
-  --message 'Merged #92-#95 — read /home/kingb/aim-agy/aim-agy_os/planning-artifacts/REPORT_TO_GROK_MERGE_92_95.md'
+  --message 'Merged #92-#95 — read ~/aim-agy/aim-agy_os/planning-artifacts/REPORT_TO_GROK_MERGE_92_95.md'
 ```
 
 The script prefixes `[FROM:…] [REPLY_TO:…]` when missing and uses the correct submit sequence.
 
 Canonical script path (copy into each vessel if needed):
 
-- `/home/kingb/grok-audit/.grok/skills/aim-communicate/scripts/tmux_send.sh`
-- `/home/kingb/aim-grok/.grok/skills/aim-communicate/scripts/tmux_send.sh`
-- `/home/kingb/aim-agy/.gemini/skills/aim-communicate/scripts/tmux_send.sh`
+- `~/grok-audit/.grok/skills/aim-communicate/scripts/tmux_send.sh`
+- `~/aim-grok/.grok/skills/aim-communicate/scripts/tmux_send.sh`
+- `~/aim-agy/.gemini/skills/aim-communicate/scripts/tmux_send.sh`
 
 ### 3c. Manual short paste
 
@@ -192,17 +192,17 @@ No open-ended chat loop.
 
 | Session | Typical CLI | Typical cwd | Submit |
 |---------|-------------|-------------|--------|
-| `grok-audit` | `grok` | `/home/kingb/grok-audit` | Enter |
-| `aim-grok` | `grok` | `/home/kingb/aim-grok` | Enter |
-| `aim-agy` | `agy` | `/home/kingb/aim-agy` | Esc→Enter |
+| `grok-audit` | `grok` | `~/grok-audit` | Enter |
+| `aim-grok` | `grok` | `~/aim-grok` | Enter |
+| `aim-agy` | `agy` | `~/aim-agy` | Esc→Enter |
 | `agy_reincarnation_*` | `agy` | aim-agy worktrees | Esc→Enter |
-| `aim-connect` | `agy` | `/home/kingb/aim-connect` | Esc→Enter |
-| `aim-opencode` | `opencode` | `/home/kingb/aim-opencode` | Enter only |
+| `aim-connect` | `agy` | `~/aim-connect` | Esc→Enter |
+| `aim-opencode` | `opencode` | `~/aim-opencode` | Enter only |
 
 **Orchestrator on this host often lives in `grok-audit`, not `aim-grok`.** Read REPLY_TO from the dispatch.
 
 OpenCode vessel skill (extra notes):  
-`/home/kingb/aim-opencode/.opencode/skills/aim-communicate/SKILL.md`
+`~/aim-opencode/.opencode/skills/aim-communicate/SKILL.md`
 
 ## 7. Anti-patterns
 
@@ -222,17 +222,17 @@ OpenCode vessel skill (extra notes):
 
 | Session | CLI | cwd | Submit |
 |---------|-----|-----|--------|
-| `aim-codex` | Codex (`node` / `codex`) | `/home/kingb/aim-codex` | **Enter only** (same as Grok/OpenCode; never Esc first) |
+| `aim-codex` | Codex (`node` / `codex`) | `~/aim-codex` | **Enter only** (same as Grok/OpenCode; never Esc first) |
 
 **Live orchestrator (this campaign):** tmux session **`aim-grok`**  
 Always set `[REPLY_TO:aim-grok]` when answering the orchestrator unless a dispatch names a different REPLY_TO.
 
 Install path on this vessel:
-`/home/kingb/aim-codex/.codex/skills/aim-communicate/`
+`~/aim-codex/.codex/skills/aim-communicate/`
 
 Helper:
 ```bash
-bash /home/kingb/aim-codex/.codex/skills/aim-communicate/scripts/tmux_send.sh \
+bash ~/aim-codex/.codex/skills/aim-communicate/scripts/tmux_send.sh \
   --target aim-grok \
   --from aim-codex \
   --reply-to aim-grok \

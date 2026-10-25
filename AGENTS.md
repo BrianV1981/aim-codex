@@ -2,7 +2,7 @@
 
 ## Mission and boundaries
 
-This repository is the **Codex host vessel** for A.I.M. The nested `aim-agy_os/` is the shared A.I.M. engine; its upstream source of truth is `/home/kingb/aim-agy` and the active pin is recorded in `SOURCE.md`.
+This repository is the **Codex host vessel** for A.I.M. The nested `aim-agy_os/` is the shared A.I.M. engine; its upstream source of truth is `~/aim-agy` and the active pin is recorded in `SOURCE.md`.
 
 Implement shared-engine changes on `aim-agy` first. In this vessel, change only Codex host overlays: Codex configuration and skills, Codex transcript discovery, Codex process spawning, root documentation, and the `./aim` wrapper.
 

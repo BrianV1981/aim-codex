@@ -9,7 +9,7 @@
 First records often:
 
 ```json
-{"type":"session_meta","payload":{"session_id":"...","cwd":"/home/kingb/aim-codex",...}}
+{"type":"session_meta","payload":{"session_id":"...","cwd":"~/aim-codex",...}}
 ```
 
 Dialogue:
@@ -30,7 +30,7 @@ Dialogue:
 ## Operator commands
 
 ```bash
-cd /home/kingb/aim-codex
+cd ~/aim-codex
 ./aim doctor
 ./aim pulse
 # exclusive:

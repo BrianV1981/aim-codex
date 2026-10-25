@@ -30,7 +30,7 @@
 ## Operator prove (when quota allows)
 
 ```bash
-cd /home/kingb/aim-codex
+cd ~/aim-codex
 ./aim doctor
 aim-agy_os/venv/bin/python3 -m pytest aim-agy_os/tests/test_codex_vessel_parity.py -q
 

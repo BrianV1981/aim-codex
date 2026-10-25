@@ -80,5 +80,5 @@ def test_resolve_vessel_cli_codex(monkeypatch):
 
     monkeypatch.setenv("AIM_VESSEL_CLI", "codex")
     monkeypatch.setenv("CODEX_BIN", "/usr/bin/codex-fake")
-    cli = teleport_engine._resolve_vessel_cli("/home/kingb/aim-codex")
+    cli = teleport_engine._resolve_vessel_cli("~/aim-codex")
     assert "codex" in cli[0]

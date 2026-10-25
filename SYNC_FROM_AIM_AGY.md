@@ -5,8 +5,8 @@ aim-agy is the **soul** for shared engine. aim-codex vendors `aim-agy_os/` and k
 ## Four-vessel drift check
 
 ```bash
-python3 /home/kingb/aim-agy/scripts/vessel_core_diff.py --pair agy,codex --report-only
-python3 /home/kingb/aim-agy/scripts/vessel_core_diff.py --report-only
+python3 ~/aim-agy/scripts/vessel_core_diff.py --pair agy,codex --report-only
+python3 ~/aim-agy/scripts/vessel_core_diff.py --report-only
 ```
 
 ## Overlay denylist (do not clobber blindly)
@@ -23,8 +23,8 @@ python3 /home/kingb/aim-agy/scripts/vessel_core_diff.py --report-only
 ## Safe rsync (engine only)
 
 ```bash
-AGY=/home/kingb/aim-agy
-CODEX=/home/kingb/aim-codex
+AGY=~/aim-agy
+CODEX=~/aim-codex
 
 rsync -anc \
   --exclude venv --exclude memory --exclude memory_lance \
